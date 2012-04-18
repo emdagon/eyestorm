@@ -6,42 +6,47 @@ from tornado.options import define, options
 
 from pprint import pprint
 
-define('port', default=8888)
-define('address', default='127.0.0.1')
-define('context', default="all")
+define('address', default='127.0.0.1', help="Server address")
+define('port', default=80, help="Server port")
+define('context', default="all",
+       help="Arbitrary, used for delimiting the server behavior; "\
+            "For more information see periodic_callbacks")
 
-define('db', default={
-    'pool_id': "EyeStorm",
-    'host': "localhost",
-    'port': 27017,
-    'maxcached': 30,
-    'maxconnections': 60,
-    'dbname': "eyestorm"
-})
+define('db', default={'pool_id': "EyeStorm", 'host': "localhost",
+                      'port': 27017, 'maxcached': 30, 'maxconnections': 60,
+                      'dbname': "eyestorm"},
+       help="asyncmongo.Client parameters")
 
-define('debug', default=True)
+define('debug', default=True,
+       help="See http://www.tornadoweb.org/documentation/autoreload.html")
 
-define('autoescape', default="xhtml_escape")
+define('autoescape', default="xhtml_escape",
+       help="See http://www.tornadoweb.org/documentation/template.html?highlight=autoescape")
 
-define('app_title', default="EyeStorm app")
+define('app_title', default="EyeStorm app", help="Application title")
 
-define('cookie_secret', default="...")
-# -> base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes)
+define('cookie_secret', default="...",
+       help="http://www.tornadoweb.org/documentation/web.html?highlight=cookie#tornado.web.RequestHandler.set_secure_cookie")
+# I use the following line to generate it:
+# base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes)
 
-define('app_path', default="/")
-define('template_path', default="app/templates")
-define('static_path', default="app/static")
-define('uploads_path', default="/var/uploads")
+define('app_path', default="/", help="Application main folder path (Deprecated)")
+define('template_path', default="templates", help="Templates folder")
+define('static_path', default="static", help="Static folder")
 
-define('login_url', default="/login")
+define('login_url', default="/login",
+       help="http://www.tornadoweb.org/documentation/_modules/tornado/web.html#authenticated")
 
-define('web_root', default="")
+define('web_root', default="", help="Application main Web path")
 
-define('default_locale', default=False, type=str)
-define('translations_path', default=False, type=str)
-define('translations_domain', default=False, type=str)
+define('default_locale', default=False, type=str,
+       help="http://www.tornadoweb.org/documentation/locale.html?highlight=get_closest_locale#tornado.locale.set_default_locale")
+define('translations_path', default=False, type=str,
+       help="http://www.tornadoweb.org/documentation/locale.html?highlight=load_gettext_translations#tornado.locale.load_gettext_translations")
+define('translations_domain', default=False, type=str,
+       help="See translations_path")
 
-define('sessions', default=False)
+define('sessions', default=False, help="")
 define('sessions_store_collection', default="sessions")
 define('sessions_name', default="eyestorm_sid")
 #days
@@ -115,8 +120,8 @@ class Application(tornado.web.Application):
         if options.debug:
             print "Starting in debug mode."
 
-        # if options.default_locale:
-        #     tornado.locale.set_default_locale(options.default_locale)
+        if options.default_locale:
+            tornado.locale.set_default_locale(options.default_locale)
 
         if options.translations_path and options.translations_domain:
             tornado.locale.load_gettext_translations(options.translations_path,

@@ -6,7 +6,7 @@ class Session(Entity):
 
 
     def __init__(self, handler):
-        super(Session, self).__init__((handler.application.settings.get(
+        super(Session, self).__init__((handler.settings.get(
                                                 'sessions_store_collection',
                                                 "_eyestorm_sessions")))
 

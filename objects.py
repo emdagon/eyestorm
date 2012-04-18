@@ -1,13 +1,15 @@
-# -*- coding: utf-8 -*-
+
+from bson import ObjectId
 
 import tornado
 import asyncmongo
 
 from eyestorm import options
 
-from bson import ObjectId
 
+# Dev purposes (will be removed)
 from pprint import pprint
+
 
 def singleton(cls):
     instances = {}

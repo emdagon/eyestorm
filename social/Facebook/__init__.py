@@ -9,7 +9,12 @@ from eyestorm import web
 
 
 def parse_signed_request(signed_request, secret):
-    [encoded_sig, payload] = signed_request.split('.')
+    """Handles the Facebook "signed_request" parameter used on some situations.
+    See http://developers.facebook.com/docs/authentication/signed_request/ for
+    more information.
+
+    """
+    encoded_sig, payload = signed_request.split('.')
 
     # decode data
     sig = web.base64_url_decode(encoded_sig)
