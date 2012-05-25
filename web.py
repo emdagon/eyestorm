@@ -101,84 +101,80 @@ class route():
 
 
 ### Sessions management
-if eyestorm.options.sessions:
+
+def using_session(method):
+    """Handler method decorator, intended to provides session support.
+
+    Once this decorator is used, the 'self.session' attribute will be setted
+    to the handler instance containing an `eyestorm.objects.Entity`. It can be
+    used freely and will be saved automaticly.
+
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        _auto_finish = self._auto_finish
+        def _update_expiration():
+            if hasattr(self, '__session_updated'):
+                return
+            self.session.__expires = int(time.time()) + \
+                self.application.settings.get('sesssions_lifetime', 30) * 60
+            self.__session_updated = True
+
+        def _callback(entity, error):
+            self.session = entity
+            _update_expiration()
+            self._auto_finish = _auto_finish
+            self._on_session_loaded()
+            method(self, *args, **kwargs)
+
+        if hasattr(self, 'session') and isinstance(self.session, Session):
+            _update_expiration()
+            method(self, *args, **kwargs)
+        else:
+            self._auto_finish = False
+            session = Session(self)
+            session_id = self._get_session_id()
+            session.load(_id=ObjectId(session_id), callback=_callback)
+
+    return wrapper
 
 
-    def using_session(method):
-        """Handler method decorator, intended to provides session support.
-
-        Once this decorator is used, the 'self.session' attribute will be setted
-        to the handler instance containing an `eyestorm.objects.Entity`. It can be
-        used freely and will be saved automaticly.
-
-        """
-        @functools.wraps(method)
-        def wrapper(self, *args, **kwargs):
-            _auto_finish = self._auto_finish
-            def _update_expiration():
-                if hasattr(self, '__session_updated'):
-                    return
-                self.session.__expires = int(time.time()) + \
-                    self.application.settings.get('sesssions_lifetime', 30) * 60
-                self.__session_updated = True
-
-            def _callback(entity, error):
-                self.session = entity
-                _update_expiration()
-                self._auto_finish = _auto_finish
-                self._on_session_loaded()
-                method(self, *args, **kwargs)
-
-            if hasattr(self, 'session') and isinstance(self.session, Session):
-                _update_expiration()
-                method(self, *args, **kwargs)
-            else:
-                self._auto_finish = False
-                session = Session(self)
-                session_id = self._get_session_id()
-                session.load(_id=ObjectId(session_id), callback=_callback)
-
-        return wrapper
+@eyestorm.periodic_callback('master', 60000)
+def sessions_cleaner():
+    """Sessions expiration maintainer"""
+    timestamp = int(time.time())
+    print "cleanning sessions... " + str(timestamp)
+    def _callback(result, error):
+        if result and result['n'] > 0:
+            print "%i sessions cleaned up!" % result['n']
+    sessions = Sessions()
+    sessions.remove(({'__expires': {'$lt': timestamp}}),
+                    callback=_callback)
 
 
-    @eyestorm.periodic_callback('master', 60000)
-    def sessions_cleaner():
-        """Sessions expiration maintainer"""
-        timestamp = int(time.time())
-        print "cleanning sessions... " + str(timestamp)
-        def _callback(result, error):
-            if result and result['n'] > 0:
-                print "%i sessions cleaned up!" % result['n']
-        sessions = Sessions()
-        sessions.remove(({'__expires': {'$lt': timestamp}}),
-                        callback=_callback)
+# Copied from tornado.web
+# It's a workaround in order to decorate with @using_session
+def authenticated(method):
+    """Decorate methods with this to require that the user be logged in."""
+    @using_session
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if not self.current_user:
+            if self.request.method in ("GET", "HEAD"):
+                url = self.get_login_url()
+                if "?" not in url:
+                    if urlparse.urlsplit(url).scheme:
+                        # if login url is absolute, make next absolute too
+                        next_url = self.request.full_url()
+                    else:
+                        next_url = self.request.uri
+                    url += "?" + urllib.urlencode(dict(next=next_url))
+                self.redirect(url)
+                return
+            raise HTTPError(403)
+        return method(self, *args, **kwargs)
+    return wrapper
 
-
-    # Copied from tornado.web
-    # It's a workaround in order to decorate with @using_session
-    def authenticated(method):
-        """Decorate methods with this to require that the user be logged in."""
-        @using_session
-        @functools.wraps(method)
-        def wrapper(self, *args, **kwargs):
-            if not self.current_user:
-                if self.request.method in ("GET", "HEAD"):
-                    url = self.get_login_url()
-                    if "?" not in url:
-                        if urlparse.urlsplit(url).scheme:
-                            # if login url is absolute, make next absolute too
-                            next_url = self.request.full_url()
-                        else:
-                            next_url = self.request.uri
-                        url += "?" + urllib.urlencode(dict(next=next_url))
-                    self.redirect(url)
-                    return
-                raise HTTPError(403)
-            return method(self, *args, **kwargs)
-        return wrapper
-
-
-## Handlers
 
 class BaseHandler(RequestHandler):
     """Eyestorm main handler, intended to be extended by the application
@@ -186,9 +182,8 @@ class BaseHandler(RequestHandler):
     """
 
     def __init__(self, application, request, **kwargs):
-        if eyestorm.options.sessions:
-            self.__session_id = None
-            self.session = False
+        self.__session_id = None
+        self.session = False
         super(BaseHandler, self).__init__(application, request, **kwargs)
 
     def write_cookie(self, name, value):
@@ -201,47 +196,47 @@ class BaseHandler(RequestHandler):
             return json_decode(base64.b64decode(value))
         return default
 
-    if eyestorm.options.sessions:
-        def _get_session_id(self):
-            if not self.__session_id:
-                self.__session_id = self.get_secure_cookie(
-                                    self.application.settings.get('sessions_name'),
-                                    None)
-                if self.__session_id == None:
-                    self.__session_id = str(ObjectId())
-                    self._set_session_id(self.__session_id)
-            return self.__session_id
 
-        def _set_session_id(self, value):
-            print "setting cookie: %s" % value
-            self.set_secure_cookie(
-                            self.application.settings.get('sessions_name'),
-                            value,
-                            self.application.settings.get('sessions_expiration'))
+    def _get_session_id(self):
+        if not self.__session_id:
+            self.__session_id = self.get_secure_cookie(
+                                self.application.settings.get('sessions_name'),
+                                None)
+            if self.__session_id == None:
+                self.__session_id = str(ObjectId())
+                self._set_session_id(self.__session_id)
+        return self.__session_id
 
-        def _on_session_loaded(self):
-            """Override this method to perform actions just after the session
-            is loaded.
+    def _set_session_id(self, value):
+        print "setting cookie: %s" % value
+        self.set_secure_cookie(
+                        self.application.settings.get('sessions_name'),
+                        value,
+                        self.application.settings.get('sessions_expiration'))
 
-            The session will be available on self.session
-            """
-            pass
+    def _on_session_loaded(self):
+        """Override this method to perform actions just after the session
+        is loaded.
 
-        def _before_session_save(self):
-            """Override this method to perform actions just before the session
-            is saved.
-            """
-            pass
+        The session will be available on self.session
+        """
+        pass
 
-        def finish(self, chunk=None):
-            if not self._finished and isinstance(self.session, Session):
-                def _callback(entity, error):
-                    if error:
-                        raise Exception("Warning: error saving the session! (%s)" \
-                                        % error)
-                self._before_session_save()
-                self.session.update(callback=_callback)
-            super(BaseHandler, self).finish(chunk)
+    def _before_session_save(self):
+        """Override this method to perform actions just before the session
+        is saved.
+        """
+        pass
+
+    def finish(self, chunk=None):
+        if not self._finished and isinstance(self.session, Session):
+            def _callback(entity, error):
+                if error:
+                    raise Exception("Warning: error saving the session! (%s)" \
+                                    % error)
+            self._before_session_save()
+            self.session.update(callback=_callback)
+        super(BaseHandler, self).finish(chunk)
 
 
 
