@@ -18,6 +18,7 @@
 # along with Eyestorm.  If not, see <http://www.gnu.org/licenses/>.
 
 from bson import ObjectId
+import logging
 
 import tornado
 import asyncmongo
@@ -46,7 +47,7 @@ class Db(object):
     def __init__(self):
         self._config = options.db
         self._connection = asyncmongo.Client(**self._config)
-        print("Mongo connection created")
+        logging.info("Mongo connection created")
 
     def get_config(self):
         return self._config

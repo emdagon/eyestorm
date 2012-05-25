@@ -17,12 +17,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Eyestorm.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 from tornado.options import define, options
 
+
+# Dev purposes (will be removed)
 from pprint import pprint
+
 
 define('address', default='127.0.0.1', help="Server address")
 define('port', default=80, help="Server port")
@@ -71,6 +76,7 @@ define('sessions_name', default="eyestorm_sid")
 define('sessions_expiration', default=1)
 #minutes
 define('sesssions_lifetime', default=5)
+
 
 _looper = tornado.ioloop.IOLoop.instance()
 
@@ -136,7 +142,7 @@ class Application(tornado.web.Application):
         global __looper, options
 
         if options.debug:
-            print "Starting in debug mode."
+            logging.info("Starting in debug mode.")
 
         if options.default_locale:
             tornado.locale.set_default_locale(options.default_locale)
@@ -156,9 +162,9 @@ class Application(tornado.web.Application):
                                                 io_loop=_looper).start()
 
         try:
-            print "Starting %s\n" % options.app_title
+            logging.info("Starting %s", options.app_title)
             _looper.start()
         except KeyboardInterrupt:
-            print "\nStoping %s" % options.app_title
+            logging.info("Stoping %s", options.app_title)
             _looper.stop()
             _looper.close()

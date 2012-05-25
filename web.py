@@ -27,6 +27,7 @@ import base64
 import functools
 import time
 from bson import ObjectId
+import logging
 
 from tornado.web import RequestHandler, asynchronous, HTTPError, urlparse, \
                         urllib
@@ -143,10 +144,10 @@ def using_session(method):
 def sessions_cleaner():
     """Sessions expiration maintainer"""
     timestamp = int(time.time())
-    print "cleanning sessions... " + str(timestamp)
+    logging.debug("cleanning sessions... %i", timestamp)
     def _callback(result, error):
         if result and result['n'] > 0:
-            print "%i sessions cleaned up!" % result['n']
+            logging.debug("%i sessions cleaned up!", result['n'])
     sessions = Sessions()
     sessions.remove(({'__expires': {'$lt': timestamp}}),
                     callback=_callback)
@@ -208,7 +209,7 @@ class BaseHandler(RequestHandler):
         return self.__session_id
 
     def _set_session_id(self, value):
-        print "setting cookie: %s" % value
+        logging.debug("setting cookie: %s", value)
         self.set_secure_cookie(
                         self.application.settings.get('sessions_name'),
                         value,
