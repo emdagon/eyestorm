@@ -1,3 +1,21 @@
+#!/bin/env python
+#
+# Copyright 2012 Emilio Daniel Gonzalez (@emdagon)
+#
+# This file is part of Eyestorm.
+#
+# Eyestorm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# Eyestorm is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Eyestorm.  If not, see <http://www.gnu.org/licenses/>.
 
 from bson import ObjectId
 
@@ -58,7 +76,6 @@ class MongoHelper():
         return method
 
 
-
 class Persistable(object):
     """`Abstract` class that represent a mongo collection object.
 
@@ -87,14 +104,6 @@ class Persistable(object):
 
     def get_collection_name(self):
         return self._collection_name
-
-    def sleep(self):
-        self._collection = None
-        self._db = None
-
-    def wakeup(self):
-        self._set_collection(self._collection_name)
-
 
 
 class Entity(Persistable):
@@ -131,7 +140,7 @@ class Entity(Persistable):
             self._attributes[name] = value
 
     def __delattr__(self, name):
-        if name in self._attributes[name]:
+        if name in self._attributes:
             del self._attributes[name]
 
     def _return(self):
@@ -172,11 +181,11 @@ class Entity(Persistable):
             self._id = ObjectId(_id)
             self.operate.set_criteria(self._id)
             self._collection.find_one({'_id': self._id},
-                                        callback=self._on_load, **kwargs)
+                                      callback=self._on_load, **kwargs)
         elif isinstance(attributes, dict):
             self.operate.set_criteria(attributes)
             self._collection.find_one(attributes,
-                                        callback=self._on_load, **kwargs)
+                                      callback=self._on_load, **kwargs)
 
     def _on_load(self, result, error):
         if result:

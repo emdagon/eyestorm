@@ -1,3 +1,4 @@
+#!/bin/env python
 #
 # Copyright 2012 Emilio Daniel Gonzalez (@emdagon)
 #
@@ -16,39 +17,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Eyestorm.  If not, see <http://www.gnu.org/licenses/>.
 
-debug = True
+class Struct:
+    def __init__(self, **entries):
+        for entry in entries:
+            if isinstance(entries[entry], dict):
+                entries[entry] = Struct(**entries[entry])
+        self.__dict__.update(entries)
 
-autoescape = "xhtml_escape"
+    def __getitem__(self, name):
+        return self.__dict__[name]
 
-app_title = "Arcaris - PlayCall"
+    def __setitem__(self, name, value):
+        self.__dict__[name] = value
 
-# -> base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes)
-cookie_secret = ""
 
-template_path = "/root/dev/app/templates"
 
-static_path = "/root/dev/app/static"
-
-uploads_path = "/var/uploads"
-
-login_url = "/login"
-
-default_locale = "en_US"
-
-sessions = False
-sessions_store_collection = "sessions"
-sessions_name = "eyestorm_sid"
-#days
-sessions_expiration = 1
-#minutes
-sesssions_lifetime = 5
-
-db = dict(
-    pool_id="app",
-    host="localhost",
-    port=27017,
-    maxcached=40,
-    maxconnections=40,
-    dbname="app"
-)
-
+def base64_url_decode(input):
+    input += '=' * (4 - (len(input) % 4))
+    return base64.urlsafe_b64decode(input.encode('utf-8'))
