@@ -32,6 +32,7 @@ from pprint import pprint
 
 def singleton(cls):
     instances = {}
+
     def getinstance():
         if cls not in instances:
             instances[cls] = cls()
@@ -42,7 +43,6 @@ def singleton(cls):
 @singleton
 class Db(object):
     """System-wide (singleton) asyncmongo client instance"""
-
 
     def __init__(self):
         self._config = options.db
@@ -56,9 +56,7 @@ class Db(object):
         return self._connection
 
 
-
 class MongoHelper():
-
 
     def __init__(self, collection):
         self._collection = collection
@@ -84,7 +82,6 @@ class Persistable(object):
 
     """
 
-
     def __init__(self):
         self._db = None
 
@@ -108,7 +105,6 @@ class Persistable(object):
 
 
 class Entity(Persistable):
-
 
     _private_attributes = ['_db', '_attributes', '_callback', '_collection',
                            '_collection_name', '_error', '_exists',
@@ -148,7 +144,7 @@ class Entity(Persistable):
         if callable(self._callback):
             self._callback(entity=self, error=self._error)
 
-
+    # responses
     def response_dict(self):
         attributes = self._attributes.copy()
         if '_id' in attributes:
@@ -158,6 +154,7 @@ class Entity(Persistable):
     def response_json(self):
         return tornado.escape.json_encode(self.response_dict())
 
+    # attributes managment
     def set_attributes(self, attributes, exists=False):
         self._exists = exists
         self._attributes = attributes.copy()
@@ -171,12 +168,12 @@ class Entity(Persistable):
     def get_attributes(self):
         return self._attributes
 
+    # validation
     def exists(self):
         return (self._exists and '_id' in self._attributes)
 
-
-    def load(self, _id=None, attributes=None, callback=None,
-             **kwargs):
+    # reading
+    def load(self, _id=None, attributes=None, callback=None, **kwargs):
         self._callback = callback
         if _id != None:
             self._id = ObjectId(_id)
@@ -197,7 +194,7 @@ class Entity(Persistable):
             self._error = error
         self._return()
 
-
+    # writing
     def save(self, callback=None, force_update=False):
         self._callback = callback
         if self.exists() or force_update:
@@ -236,7 +233,7 @@ class Entity(Persistable):
         else:
             self.save(callback)
 
-
+    # deleting
     def delete(self, _id=None, criteria=None, callback=None):
         self._callback = callback
         if _id:
@@ -256,9 +253,7 @@ class Entity(Persistable):
         self._return()
 
 
-
 class Collection(Persistable):
-
 
     def __init__(self, collection):
         super(Collection, self).__init__()
@@ -273,7 +268,7 @@ class Collection(Persistable):
     def __len__(self):
         return len(self._data)
 
-
+    # reading
     def load(self, attributes=None, callback=None, **kwargs):
         self._callback = callback
         if not isinstance(attributes, dict):
@@ -288,7 +283,15 @@ class Collection(Persistable):
             self.operate.set_criteria(self.attributes)
         self._callback(collection=self, error=error)
 
+    def count(self, attributes=None, callback=None, **kwargs):
+        def _callback(collection=None, error=None):
+            callback(len(self._data))
+        if len(self._data) > 0:
+            _callback()
+            return
+        self.load(attributes, callback=_callback, **kwargs)
 
+    # writing
     def insert(self, items, callback=None):
         self._callback = callback
         self._items = items
@@ -300,7 +303,7 @@ class Collection(Persistable):
         del self._items
         self._callback(self, error)
 
-
+    # deleting
     def remove(self, attributes=None, callback=None, **kwargs):
         self._callback = callback
         if not isinstance(attributes, dict):
@@ -312,22 +315,14 @@ class Collection(Persistable):
         self._error = error
         self._callback(result[0], error)
 
-
-    def count(self, attributes=None, callback=None, **kwargs):
-        def _callback(collection=None, error=None):
-            callback(len(self._data))
-        if len(self._data) > 0:
-            _callback()
-            return
-        self.load(attributes, callback=_callback, **kwargs)
-
-
+    # items
     def set_items(self, items):
         self._data = items
 
     def get_items(self):
         return self._data
 
+    # responses
     def get_response_dict(self):
         def stringfy(document):
             d = document.copy()
@@ -338,7 +333,7 @@ class Collection(Persistable):
     def get_attributes(self, attribute):
         return map(lambda d: d[attribute], self._data)
 
-
+    # advance getters
     def get_indexes(self, attribute):
         if not attribute in self._indexes:
             self._indexes[attribute] = {}
@@ -358,13 +353,12 @@ class Collection(Persistable):
                 result = result + (indexes[value])
         return result
 
-
+    # validation
     def exists(self):
         return len(self._data) > 0
 
 
 class Entities(Collection):
-
 
     def __getitem__(self, index):
         data = self._data[index]

@@ -87,6 +87,7 @@ remove_timeout = _looper.remove_timeout
 # Periodic Callbacks support
 __ioloop_periodic_callbacks = {'all': []}
 
+
 def register_periodic_callback(context, method, interval):
     global __ioloop_periodic_callbacks
     if context in __ioloop_periodic_callbacks:
@@ -96,7 +97,6 @@ def register_periodic_callback(context, method, interval):
 
 
 class periodic_callback():
-
 
     def __init__(self, context="all", interval=60000):
         self.context = context
@@ -115,13 +115,12 @@ def get_periodic_callbacks(context):
     return callbacks
 
 
-
 from objects import singleton, Entity, Persistable, Collection, Entities
 
 from web import routes
 
-class Application(tornado.web.Application):
 
+class Application(tornado.web.Application):
 
     def __init__(self, config_file=None):
         global options, routes
@@ -136,7 +135,6 @@ class Application(tornado.web.Application):
             settings[option] = options[option].value()
 
         tornado.web.Application.__init__(self, routes, **settings)
-
 
     def start(self):
         global __looper, options

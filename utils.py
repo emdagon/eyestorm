@@ -17,6 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Eyestorm.  If not, see <http://www.gnu.org/licenses/>.
 
+import base64
+
+
 class Struct:
     def __init__(self, **entries):
         for entry in entries:
@@ -29,7 +32,6 @@ class Struct:
 
     def __setitem__(self, name, value):
         self.__dict__[name] = value
-
 
 
 def base64_url_decode(input):
