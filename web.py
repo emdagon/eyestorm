@@ -45,6 +45,7 @@ from pprint import pprint
 
 routes = []
 
+
 def register_handler(route, handler, args=None):
     """Register a route pointing to the handler.
 
@@ -114,6 +115,7 @@ def using_session(method):
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
         _auto_finish = self._auto_finish
+
         def _update_expiration():
             if hasattr(self, '__session_updated'):
                 return
@@ -145,6 +147,7 @@ def sessions_cleaner():
     """Sessions expiration maintainer"""
     timestamp = int(time.time())
     logging.debug("cleanning sessions... %i", timestamp)
+
     def _callback(result, error):
         if result and result['n'] > 0:
             logging.debug("%i sessions cleaned up!", result['n'])
@@ -197,7 +200,6 @@ class BaseHandler(RequestHandler):
             return json_decode(base64.b64decode(value))
         return default
 
-
     def _get_session_id(self):
         if not self.__session_id:
             self.__session_id = self.get_secure_cookie(
@@ -238,7 +240,6 @@ class BaseHandler(RequestHandler):
             self._before_session_save()
             self.session.update(callback=_callback)
         super(BaseHandler, self).finish(chunk)
-
 
 
 class CleanHandler(BaseHandler):
