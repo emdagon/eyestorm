@@ -323,7 +323,7 @@ class Collection(Persistable):
         return self._data
 
     # responses
-    def get_response_dict(self):
+    def response_dict(self):
         def stringfy(document):
             d = document.copy()
             d['_id'] = str(d['_id'])
@@ -367,3 +367,8 @@ class Entities(Collection):
         entity.set_attributes(data, True)
         return entity
 
+    def response_dict(self):
+        response = []
+        for item in self:
+            response.append(item.response_dict())
+        return response

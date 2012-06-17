@@ -32,6 +32,7 @@ import logging
 from tornado.web import RequestHandler, asynchronous, HTTPError, urlparse, \
                         urllib
 from tornado.escape import json_encode, json_decode
+from tornado.options import options
 
 import eyestorm
 
@@ -120,7 +121,7 @@ def using_session(method):
             if hasattr(self, '__session_updated'):
                 return
             self.session.__expires = int(time.time()) + \
-                self.application.settings.get('sesssions_lifetime', 30) * 60
+                                     (options.sesssions_lifetime * 60)
             self.__session_updated = True
 
         def _callback(entity, error):
@@ -135,7 +136,7 @@ def using_session(method):
             method(self, *args, **kwargs)
         else:
             self._auto_finish = False
-            session = Session(self)
+            session = Session()
             session_id = self._get_session_id()
             session.load(_id=ObjectId(session_id), callback=_callback)
 
@@ -202,9 +203,8 @@ class BaseHandler(RequestHandler):
 
     def _get_session_id(self):
         if not self.__session_id:
-            self.__session_id = self.get_secure_cookie(
-                                self.application.settings.get('sessions_name'),
-                                None)
+            self.__session_id = self.get_secure_cookie(options.sessions_name,
+                                                       None)
             if self.__session_id == None:
                 self.__session_id = str(ObjectId())
                 self._set_session_id(self.__session_id)
@@ -212,10 +212,8 @@ class BaseHandler(RequestHandler):
 
     def _set_session_id(self, value):
         logging.debug("setting cookie: %s", value)
-        self.set_secure_cookie(
-                        self.application.settings.get('sessions_name'),
-                        value,
-                        self.application.settings.get('sessions_expiration'))
+        self.set_secure_cookie(options.sessions_name, value,
+                               options.sessions_expiration)
 
     def _on_session_loaded(self):
         """Override this method to perform actions just after the session
@@ -246,4 +244,4 @@ class CleanHandler(BaseHandler):
     """Register a route pointing to this handler to clean all cookies."""
     def get(self):
         self.clear_all_cookies()
-        self.redirect(self.settings.get('web_root', "/"))
+        self.redirect(options.web_root)

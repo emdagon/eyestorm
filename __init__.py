@@ -60,7 +60,7 @@ define('static_path', default="static", help="Static folder")
 define('login_url', default="/login",
        help="http://www.tornadoweb.org/documentation/_modules/tornado/web.html#authenticated")
 
-define('web_root', default="", help="Application main Web path")
+define('web_root', default="/", help="Application main Web path")
 
 define('default_locale', default=False, type=str,
        help="http://www.tornadoweb.org/documentation/locale.html?highlight=get_closest_locale#tornado.locale.set_default_locale")
@@ -69,13 +69,12 @@ define('translations_path', default=False, type=str,
 define('translations_domain', default=False, type=str,
        help="See translations_path")
 
-define('sessions', default=False, help="")
-define('sessions_store_collection', default="sessions")
+define('sessions_store_collection', default="_eyestorm_sessions")
 define('sessions_name', default="eyestorm_sid")
 #days
 define('sessions_expiration', default=1)
 #minutes
-define('sesssions_lifetime', default=5)
+define('sesssions_lifetime', default=25)
 
 
 _looper = tornado.ioloop.IOLoop.instance()

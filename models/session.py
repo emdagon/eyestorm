@@ -17,15 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Eyestorm.  If not, see <http://www.gnu.org/licenses/>.
 
+from tornado.options import options
+
 from eyestorm.objects import Entity, Collection
 
 
 class Session(Entity):
 
-    def __init__(self, handler):
-        super(Session, self).__init__((handler.settings.get(
-                                                'sessions_store_collection',
-                                                "_eyestorm_sessions")))
+    def __init__(self):
+        super(Session, self).__init__(options.sessions_store_collection)
 
 
 class Sessions(Collection):
