@@ -67,9 +67,17 @@ class Entity(Persistable):
             self._deleted[name] = 1
             del self._values[name]
 
+    def __eq__(self, comparison):
+        return self._id == (comparison._id if isinstance(comparison, Entity) \
+                                          else comparison)
+
+    def __ne__(self, comparison):
+        return self._id != (comparison._id if isinstance(comparison, Entity) \
+                                          else comparison)
+
     def _set_attribute(self, name, value):
         if name in self.__class__._attributes:
-            spec = getattr(self.__class__._attributes, name)
+            spec = self.__class__._attributes[name]
             if spec.validate(value):
                 self._values[name] = spec.cast(value)
             else:
@@ -149,8 +157,8 @@ class Entity(Persistable):
             self._set_attribute('_id', ObjectId())
         for attribute in self.__class__._attributes:
             if self.__class__._attributes[attribute].required \
-                    and not self._values[model_attribute]:
-                raise MissingAttribute(self.__class__, model_attribute)
+                    and not self._values[attribute]:
+                raise MissingAttribute(self.__class__, attribute)
         self._collection.insert(self._values, callback=self._on_insert)
 
     def _on_insert(self, result, error):
@@ -206,3 +214,8 @@ class Entity(Persistable):
         entity = cls()
         entity.set_attributes(kwargs)
         entity.save(callback)
+
+    @classmethod
+    def find(cls, callback, **kwargs):
+        entity = cls()
+        entity.load(callback=callback, **kwargs)

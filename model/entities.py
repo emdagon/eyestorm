@@ -36,3 +36,9 @@ class Entities(Collection):
         for item in self:
             response.append(item.response_dict())
         return response
+
+    @classmethod
+    def find(cls, callback, **kwargs):
+        entity = cls()
+        entity.load(attributes=kwargs, callback=callback)
+

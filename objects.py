@@ -106,12 +106,13 @@ class Persistable(object):
 
 class Collection(Persistable):
 
-    def __init__(self, collection):
+    def __init__(self):
         super(Collection, self).__init__()
         self._data = []
         self.attributes = None
         self._indexes = {}
-        self._set_collection(collection)
+        if self.__class__._collection:
+            self._set_collection(self.__class__._collection)
 
     def __getitem__(self, index):
         return self._data[index]

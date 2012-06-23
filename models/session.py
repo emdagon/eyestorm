@@ -32,5 +32,4 @@ class Session(Entity):
 
 class Sessions(Collection):
 
-    def __init__(self):
-        super(Sessions, self).__init__("sessions")
+    _collection = options.sessions_store_collection
