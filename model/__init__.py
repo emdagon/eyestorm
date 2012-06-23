@@ -17,20 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Eyestorm.  If not, see <http://www.gnu.org/licenses/>.
 
-from tornado.options import options
+from attributes import *
 
-from eyestorm.objects import Collection
-from eyestorm.model import Entity, Attribute
-
-
-class Session(Entity):
-
-    _collection = options.sessions_store_collection
-
-    fruta = Attribute()
-
-
-class Sessions(Collection):
-
-    def __init__(self):
-        super(Sessions, self).__init__("sessions")
+from entity import Entity
+from entities import Entities

@@ -17,20 +17,32 @@
 # You should have received a copy of the GNU General Public License
 # along with Eyestorm.  If not, see <http://www.gnu.org/licenses/>.
 
-from tornado.options import options
 
-from eyestorm.objects import Collection
-from eyestorm.model import Entity, Attribute
+class InvalidAttribute(Exception):
+
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+        print "Invalid value for '%s': %s" % (name, str(self.value))
+
+    def __str__(self):
+        return "Invalid value for '%s': %s" % (name, str(self.value))
 
 
-class Session(Entity):
+class UnknownAttribute(Exception):
 
-    _collection = options.sessions_store_collection
+    def __init__(self, name):
+        self.name = name
 
-    fruta = Attribute()
+    def __str__(self):
+        return "Unknown '%s' Attribute" % name
 
 
-class Sessions(Collection):
+class MissingAttribute(Exception):
 
-    def __init__(self):
-        super(Sessions, self).__init__("sessions")
+    def __init__(self, model, name):
+        self.model = model.__name__
+        self.name = name
+
+    def __str__(self):
+        return "Missing attribute '%s' for %s model" % (self.name, self.model)

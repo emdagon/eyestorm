@@ -114,7 +114,9 @@ def get_periodic_callbacks(context):
     return callbacks
 
 
-from objects import singleton, Entity, Persistable, Collection, Entities
+from objects import singleton, Persistable, Collection
+
+from model import Entity, Entities
 
 from web import routes
 

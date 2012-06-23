@@ -137,8 +137,7 @@ def using_session(method):
         else:
             self._auto_finish = False
             session = Session()
-            session_id = self._get_session_id()
-            session.load(_id=ObjectId(session_id), callback=_callback)
+            session.load(_id=self._get_session_id(), callback=_callback)
 
     return wrapper
 
