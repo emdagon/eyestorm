@@ -17,6 +17,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Eyestorm.  If not, see <http://www.gnu.org/licenses/>.
 
+_models = {}
+
+def model(cls):
+    global _models
+
+    _models[cls.__name__] = cls
+
+    return cls
+
+
 from attributes import *
 
 from entity import Entity

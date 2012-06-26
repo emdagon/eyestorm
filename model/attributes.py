@@ -19,12 +19,11 @@
 
 from bson import ObjectId
 
+from pprint import pprint
 
-def has_one(model):
-    return ReferenceHasOne(model)
+## Basic attribute types
 
-
-class Attribute():
+class Attribute(object):
 
     def __init__(self, required=True, null=False, default=None,
                  min_length=None, max_length=None):
@@ -34,11 +33,8 @@ class Attribute():
         self.min_length = min_length
         self.max_length = max_length
 
-    def __call__(self):
-        return "fruta"
-
     def is_null(self, value):
-        return not bool(value)
+        return (value is None)
 
     def validate_length(self, value):
         if self.min_length and len(value) < self.min_length:
@@ -48,35 +44,12 @@ class Attribute():
         return True
 
     def cast(self, value):
-        return value
+        return value or self.default
 
     def validate(self, value):
         if not self.null and self.is_null(value):
             return False
         return self.validate_length(value)
-
-
-class PrimaryKey(Attribute):
-
-    def __init__(self):
-        self.required = True
-
-    def cast(self, value):
-        return ObjectId(value)
-
-    def validate(self, value):
-        return True
-
-
-class ReferenceHasOne(Attribute):
-
-    def __init__(self, reference):
-        self.required = True
-        self.reference = reference
-
-    def validate(self, value):
-        return True
-        #return self.reference.validate_reference(value)
 
 
 class String(Attribute):
@@ -88,7 +61,7 @@ class String(Attribute):
 class Number(Attribute):
 
     def __init__(self, min_value=None, max_value=None, **kwargs):
-        Attribute.__init__(self, **kwargs)
+        super(Number, self).__init__(**kwargs)
         self.min_value = min_value
         self.max_value = max_value
 
@@ -100,7 +73,7 @@ class Number(Attribute):
         return True
 
     def validate(self, value):
-        if Attribute.validate(self, value):
+        if super(Number, self).validate(value):
             return self.validate_range(value)
         return False
 
@@ -125,10 +98,114 @@ class Boolean(Attribute):
 
 class Array(Attribute):
 
+    def __init__(self, items_type=None, **kwargs):
+        super(Array, self).__init__(**kwargs)
+        self.items_type = items_type
+
+    def validate_item(self, item):
+        return ((isinstance(self.items_type, Attribute)
+                    and self.items_type.validate(item))
+                or isinstance(item, self.items_type))
+
+    def validate_items(self, items):
+        if self.items_type:
+            for item in items:
+                if self.validate_item(item):
+                    continue
+                return False
+        return True
+
+    def validate(self, value):
+        if super(Array, self).validate(value):
+            return self.validate_items(value)
+        return False
+
     def cast(self, value):
         return list(value)
 
 
 class Object(Attribute):
 
-    pass
+    def validate(self, value):
+        if super(Object, self).validate(value):
+            return isinstance(value, dict)
+        return False
+
+
+class PrimaryKey(Attribute):
+
+    def __init__(self):
+        super(PrimaryKey, self).__init__()
+        self.required = True
+
+    def cast(self, value):
+        return ObjectId(value)
+
+    def validate(self, value):
+        print "PrimaryKey.validate!"
+        pprint(ObjectId(value))
+        try:
+            ObjectId(value)
+            return True
+        except:
+            return False
+
+
+# References
+
+from eyestorm.model import _models
+
+
+class Reference(Attribute):
+
+    def __init__(self, model, attribute):
+        super(Reference, self).__init__()
+        self.model_name = model
+        self.attribute = attribute
+        self.required = True
+
+    @property
+    def model(self):
+        return _models[self.model_name]
+
+    @property
+    def reference(self):
+        return _models[self.model_name]._attributes[self.attribute]
+
+
+class ReferenceOneToOne(Reference):
+
+    def validate(self, value):
+        return self.reference.validate(value)
+
+
+class ReferenceOneToMany(Reference):
+
+    def __init__(self, model, stack):
+        super(ReferenceOneToMany, self).__init__(model, '_id')
+        self.stack = stack
+
+    def validate(self, value):
+        return self.reference.validate(value)
+        # if isinstance(self.reference, ReferenceManyToOne):
+        #     return self.reference.validate_item(value)
+        # return False
+
+
+class ReferenceManyToOne(Reference, Array):
+
+    def __init__(self, model, attribute):
+        super(ReferenceManyToOne, self).__init__(model, attribute)
+        self.items_type = PrimaryKey
+        self.required = False
+        self.default = []
+
+
+def is_a(model):
+    return ReferenceOneToOne(model, '_id')
+
+def as_in(model, stack):
+    return ReferenceOneToMany(model, stack)
+
+def has_many(model, attribute='_id'):
+    return ReferenceManyToOne(model, attribute)

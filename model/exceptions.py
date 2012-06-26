@@ -21,28 +21,27 @@
 class InvalidAttribute(Exception):
 
     def __init__(self, name, value):
-        self.name = name
-        self.value = value
-        print "Invalid value for '%s': %s" % (name, str(self.value))
+        self.name = str(name)
+        self.value = repr(value)
 
     def __str__(self):
-        return "Invalid value for '%s': %s" % (name, str(self.value))
+        return "Invalid value for '%s': %s" % (self.name, str(self.value))
 
 
 class UnknownAttribute(Exception):
 
     def __init__(self, name):
-        self.name = name
+        self.name = str(name)
 
     def __str__(self):
-        return "Unknown '%s' Attribute" % name
+        return "Unknown '%s' Attribute" % self.name
 
 
 class MissingAttribute(Exception):
 
     def __init__(self, model, name):
-        self.model = model.__name__
-        self.name = name
+        self.model = repr(model)
+        self.name = str(name)
 
     def __str__(self):
         return "Missing attribute '%s' for %s model" % (self.name, self.model)

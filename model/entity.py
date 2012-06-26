@@ -21,9 +21,9 @@ from bson import ObjectId
 
 from eyestorm.objects import Persistable
 
-from exceptions import InvalidAttribute, UnknownAttribute
+from exceptions import InvalidAttribute, UnknownAttribute, MissingAttribute
 
-from attributes import Attribute, PrimaryKey
+from attributes import PrimaryKey, Reference, ReferenceOneToMany
 
 from pprint import pprint
 
@@ -41,6 +41,8 @@ class Entity(Persistable):
     def __init__(self):
         super(Entity, self).__init__()
         self._values = {}
+        for key, spec in self.__class__._attributes.iteritems():
+            self._values[key] = spec.default
         self._collection = None
         self._callback = None
         self._error = None
@@ -60,7 +62,7 @@ class Entity(Persistable):
         if name in self.__class__._private_attributes:
             self.__dict__[name] = value
         else:
-            self._set_attribute(name, value)
+            self.__set_attribute(name, value)
 
     def __delattr__(self, name):
         if name in self._values:
@@ -69,23 +71,33 @@ class Entity(Persistable):
 
     def __eq__(self, comparison):
         return self._id == (comparison._id if isinstance(comparison, Entity) \
-                                          else comparison)
+                                           else comparison)
 
     def __ne__(self, comparison):
         return self._id != (comparison._id if isinstance(comparison, Entity) \
-                                          else comparison)
+                                           else comparison)
 
-    def _set_attribute(self, name, value):
+    def __set_attribute(self, name, value):
         if name in self.__class__._attributes:
             spec = self.__class__._attributes[name]
             if spec.validate(value):
-                self._values[name] = spec.cast(value)
+                if isinstance(spec, Reference) \
+                        and isinstance(spec.reference, PrimaryKey):
+                    self._values[name] = str(value)
+                else:
+                    self._values[name] = spec.cast(value)
             else:
                 raise InvalidAttribute(name, value)
         elif self.__class__._accepts_unknown_attributes:
             self._values[name] = value
         else:
             raise UnknownAttribute(name)
+
+    def __check_values(self):
+        for name, attribute in self.__class__._attributes.iteritems():
+            pprint(self._values[name])
+            if attribute.required and not self._values[name]:
+                raise MissingAttribute(self.__class__, name)
 
     def validate_reference(self, value):
         return True
@@ -109,11 +121,11 @@ class Entity(Persistable):
         self._exists = exists
         self._values = {}
         for name, value in attributes.iteritems():
-            self._set_attribute(name, value)
+            self.__set_attribute(name, value)
 
     def update_attributes(self, attributes):
         for name, value in attributes.iteritems():
-            self._set_attribute(name, value)
+            self.__set_attribute(name, value)
 
     def get_attributes(self):
         return self._values
@@ -153,21 +165,35 @@ class Entity(Persistable):
             self._insert()
 
     def _insert(self):
-        if not '_id' in self._values:
-            self._set_attribute('_id', ObjectId())
-        for attribute in self.__class__._attributes:
-            if self.__class__._attributes[attribute].required \
-                    and not self._values[attribute]:
-                raise MissingAttribute(self.__class__, attribute)
+        if not '_id' in self._values or not self._values['_id']:
+            self.__set_attribute('_id', ObjectId())
+        self.__check_values()
         self._collection.insert(self._values, callback=self._on_insert)
 
     def _on_insert(self, result, error):
         if result:
             self._exists = True
+
+            def referenced(entity, error):
+                print "referenced! =D"
+                pprint(entity)
+
+            for name, attribute in self.__class__._attributes.iteritems():
+                if isinstance(attribute, ReferenceOneToMany):
+
+                    def _append_to_stack(entity, error, stack=attribute.stack):
+                        getattr(entity, stack).append(str(self._id))
+                        entity.update(referenced)
+
+                    attribute.model.find(_id=getattr(self, name),
+                                         callback=_append_to_stack)
+
+
         self._error = error
         self._return()
 
     def _update(self):
+        self.__check_values()
         self._collection.update({'_id': self._values['_id']},
                                 self._values, callback=self._on_update)
 
@@ -178,6 +204,7 @@ class Entity(Persistable):
         self._return()
 
     def update(self, callback):
+        self.__check_values()
         if self.exists():
             document = self._values.copy()
             del document['_id']
@@ -212,7 +239,7 @@ class Entity(Persistable):
     @classmethod
     def create(cls, callback, **kwargs):
         entity = cls()
-        entity.set_attributes(kwargs)
+        entity.update_attributes(kwargs)
         entity.save(callback)
 
     @classmethod
