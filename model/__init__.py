@@ -27,6 +27,8 @@ def model(cls):
     return cls
 
 
+from exceptions import *
+
 from attributes import *
 
 from entity import Entity

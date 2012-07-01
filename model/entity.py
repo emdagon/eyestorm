@@ -143,6 +143,8 @@ class Entity(Persistable):
             self._collection.find_one({'_id': self._id},
                                       callback=self._on_load, **kwargs)
         elif isinstance(attributes, dict):
+            if '_id' in attributes:
+                attributes['_id'] = ObjectId(attributes['_id'])
             self.operate.set_criteria(attributes)
             self._collection.find_one(attributes,
                                       callback=self._on_load, **kwargs)
@@ -245,4 +247,4 @@ class Entity(Persistable):
     @classmethod
     def find(cls, callback, **kwargs):
         entity = cls()
-        entity.load(callback=callback, **kwargs)
+        entity.load(callback=callback, attributes=kwargs)
