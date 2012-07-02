@@ -18,6 +18,7 @@
 # along with Eyestorm.  If not, see <http://www.gnu.org/licenses/>.
 
 from bson import ObjectId
+from tornado.escape import json_encode
 
 from eyestorm.objects import Persistable
 
@@ -114,7 +115,7 @@ class Entity(Persistable):
         return attributes
 
     def response_json(self):
-        return tornado.escape.json_encode(self.response_dict())
+        return json_encode(self.response_dict())
 
     # attributes management
     def set_attributes(self, attributes, exists=False):
@@ -160,6 +161,7 @@ class Entity(Persistable):
 
     # writing
     def save(self, callback=None, force_update=False):
+        pprint(("save", callback))
         self._callback = callback
         if self.exists() or force_update:
             self._update()
@@ -240,6 +242,7 @@ class Entity(Persistable):
 
     @classmethod
     def create(cls, callback, **kwargs):
+        pprint(("create", kwargs))
         entity = cls()
         entity.update_attributes(kwargs)
         entity.save(callback)

@@ -142,8 +142,6 @@ class PrimaryKey(Attribute):
         return ObjectId(value)
 
     def validate(self, value):
-        print "PrimaryKey.validate!"
-        pprint(ObjectId(value))
         try:
             ObjectId(value)
             return True

@@ -24,9 +24,11 @@ from entity import Entity
 
 class Entities(Collection):
 
+    _entity = Entity
+
     def __getitem__(self, index):
         data = self._data[index]
-        entity = Entity()
+        entity = getattr(self.__class__, '_entity')()
         entity._set_collection(self.get_collection_name())
         entity.set_attributes(data, True)
         return entity
