@@ -30,7 +30,7 @@ class Entities(Collection):
         data = self._data[index]
         entity = getattr(self.__class__, '_entity')()
         entity._set_collection(self.get_collection_name())
-        entity.set_attributes(data, True)
+        entity.set_attributes(data, True, True)
         return entity
 
     def response_dict(self):

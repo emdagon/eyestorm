@@ -118,15 +118,21 @@ class Entity(Persistable):
         return json_encode(self.response_dict())
 
     # attributes management
-    def set_attributes(self, attributes, exists=False):
-        self._exists = exists
-        self._values = {}
-        for name, value in attributes.iteritems():
-            self.__set_attribute(name, value)
+    def set_attributes(self, attributes, exists=False, force=False):
+        if force:
+            self._values = attributes
+        else:
+            self._exists = exists
+            self._values = {}
+            for name, value in attributes.iteritems():
+                self.__set_attribute(name, value)
 
-    def update_attributes(self, attributes):
-        for name, value in attributes.iteritems():
-            self.__set_attribute(name, value)
+    def update_attributes(self, attributes, force=False):
+        if force:
+            self._values.update(attributes)
+        else:
+            for name, value in attributes.iteritems():
+                self.__set_attribute(name, value)
 
     def get_attributes(self):
         return self._values
