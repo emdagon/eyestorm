@@ -55,7 +55,7 @@ class Attribute(object):
 class String(Attribute):
 
     def cast(self, value):
-        return str(value)
+        return value.encode('utf-8')
 
 
 class Number(Attribute):

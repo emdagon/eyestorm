@@ -71,12 +71,12 @@ class Entity(Persistable):
             del self._values[name]
 
     def __eq__(self, comparison):
-        return self._id == (comparison._id if isinstance(comparison, Entity) \
-                                           else comparison)
+        if isinstance(comparison, Entity):
+            return self._id == comparison._id
+        return str(self._id) == comparison
 
     def __ne__(self, comparison):
-        return self._id != (comparison._id if isinstance(comparison, Entity) \
-                                           else comparison)
+        return not self.__eq__(comparison)
 
     def __set_attribute(self, name, value):
         if name in self.__class__._attributes:
@@ -96,7 +96,6 @@ class Entity(Persistable):
 
     def __check_values(self):
         for name, attribute in self.__class__._attributes.iteritems():
-            pprint(self._values[name])
             if attribute.required and not self._values[name]:
                 raise MissingAttribute(self.__class__, name)
 
@@ -167,7 +166,6 @@ class Entity(Persistable):
 
     # writing
     def save(self, callback=None, force_update=False):
-        pprint(("save", callback))
         self._callback = callback
         if self.exists() or force_update:
             self._update()
@@ -248,10 +246,22 @@ class Entity(Persistable):
 
     @classmethod
     def create(cls, callback, **kwargs):
-        pprint(("create", kwargs))
         entity = cls()
         entity.update_attributes(kwargs)
         entity.save(callback)
+
+    @classmethod
+    def fast_update(cls, _id, callback, **kwargs):
+        def _callback(entity, error):
+            if entity.exists():
+                entity.update_attributes(kwargs)
+                entity.update(callback)
+            else:
+                callback(entity, error)
+        entity = cls()
+        entity.load(_id=_id, callback=_callback)
+
+
 
     @classmethod
     def find(cls, callback, **kwargs):

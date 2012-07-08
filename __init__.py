@@ -69,7 +69,7 @@ define('translations_path', default=False, type=str,
 define('translations_domain', default=False, type=str,
        help="See translations_path")
 
-define('sessions_store_collection', default="_eyestorm_sessions")
+define('sessions_store_collection', default="eyestorm_sessions")
 define('sessions_name', default="eyestorm_sid")
 #days
 define('sessions_expiration', default=1)
@@ -102,6 +102,8 @@ class periodic_callback():
         self.interval = interval
 
     def __call__(self, method):
+        logging.info("Periodic callback: '%s' in '%s', interval: %s" % \
+                     (method.__name__, self.context, self.interval))
         register_periodic_callback(self.context, method, self.interval)
 
 
@@ -124,21 +126,22 @@ from web import routes
 class Application(tornado.web.Application):
 
     def __init__(self, config_file=None):
-        global options, routes
+        global options
 
         if config_file:
             tornado.options.parse_config_file(config_file)
 
         tornado.options.parse_command_line()
 
-        settings = {}
+        self.settings = {}
         for option in options:
-            settings[option] = options[option].value()
+            self.settings[option] = options[option].value()
 
-        tornado.web.Application.__init__(self, routes, **settings)
 
     def start(self):
-        global __looper, options
+        global __looper, options, routes
+
+        tornado.web.Application.__init__(self, routes, **self.settings)
 
         if options.debug:
             logging.info("Starting in debug mode.")
