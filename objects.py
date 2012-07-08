@@ -208,3 +208,9 @@ class Collection(Persistable):
     # validation
     def exists(self):
         return len(self._data) > 0
+
+    @classmethod
+    def update(cls, criteria, attributes, callback):
+        instance = cls()
+        instance._collection.update(criteria, attributes, multi=True,
+                                    callback=callback)
