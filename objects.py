@@ -158,14 +158,16 @@ class Collection(Persistable):
     # deleting
     def remove(self, attributes=None, callback=None, **kwargs):
         self._callback = callback
-        if not isinstance(attributes, dict):
-            attributes = {}
-        self.attributes = attributes
-        self._collection.remove(attributes, callback=self._on_remove, **kwargs)
+        self.attributes = attributes or self.attributes
+        if not isinstance(self.attributes, dict):
+            self.attributes = {}
+        self._collection.remove(self.attributes, callback=self._on_remove,
+                                **kwargs)
 
     def _on_remove(self, result, error):
         self._error = error
-        self._callback(result[0], error)
+        if callable(self._callback):
+            self._callback(result[0], error)
 
     # items
     def set_items(self, items):
