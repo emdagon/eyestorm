@@ -96,7 +96,7 @@ class Entity(Persistable):
 
     def __check_values(self):
         for name, attribute in self.__class__._attributes.iteritems():
-            if attribute.required and not self._values[name]:
+            if attribute.required and not name in self._values:
                 raise MissingAttribute(self.__class__, name)
 
     def validate_reference(self, value):

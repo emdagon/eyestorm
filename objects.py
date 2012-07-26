@@ -212,7 +212,8 @@ class Collection(Persistable):
         return len(self._data) > 0
 
     @classmethod
-    def update(cls, criteria, attributes, callback):
+    def update(cls, criteria, attributes, callback=None):
+        callback = callback or (lambda result, error: None)
         instance = cls()
         instance._collection.update(criteria, attributes, multi=True,
                                     callback=callback)
