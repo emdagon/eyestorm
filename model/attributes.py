@@ -55,7 +55,15 @@ class Attribute(object):
 class String(Attribute):
 
     def cast(self, value):
-        return value.encode('utf-8')
+        if isinstance(value, unicode):
+            return value
+        else:
+            return unicode(value, 'utf-8')
+
+    def validate(self, value):
+        if super(String, self).validate(value):
+            return isinstance(value, basestring)
+        return False
 
 
 class Number(Attribute):
